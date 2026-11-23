@@ -378,15 +378,16 @@
     if (dis) dis.addEventListener("click", clearToast);
   }
 
-  // Dynamic Vector SVG Lamp & Accessory Illustrations (Finish Color Updates Live!)
-  function renderLampSvg(style, hex, warmGlow = true) {
-    const shadeFill = hex || "#434850";
-    const isLight = shadeFill.toLowerCase() === "#e7eaef" || shadeFill.toLowerCase() === "#ebedf2" || shadeFill.toLowerCase() === "#9ca5b0";
-    const stroke = isLight ? "#5b6575" : "#11161f";
-    const glow = warmGlow
-      ? `<polygon points="108,82 162,150 76,150" fill="rgba(255, 223, 128, 0.34)" />`
-      : "";
+  // Lamp Icon Renderer (Uses Attributed Flaticon Line Icons with Finish-Aware Tinting)
+  const LAMP_ICON_FILES = {
+    clamp: "assets/lamp-tertial.png",
+    slim: "assets/lamp-navlinge.png",
+    classic: "assets/lamp-forsa.png",
+    modern: "assets/lamp-nymane.png",
+    heavy: "assets/lamp-forsa.png"
+  };
 
+  function renderLampSvg(style, hex, warmGlow = true) {
     if (style === "accessory") {
       return `
         <svg viewBox="0 0 180 180" aria-hidden="true">
@@ -398,74 +399,21 @@
         </svg>`;
     }
 
-    if (style === "clamp") {
-      // TERTIAL articulated clamp work lamp
-      return `
-        <svg viewBox="0 0 180 180" aria-hidden="true">
-          ${glow}
-          <rect x="24" y="142" width="38" height="10" rx="3" fill="${shadeFill}" stroke="${stroke}" stroke-width="2.5"/>
-          <rect x="36" y="152" width="10" height="14" rx="2" fill="#6b7280"/>
-          <line x1="42" y1="142" x2="66" y2="88" stroke="${shadeFill}" stroke-width="5" stroke-linecap="round"/>
-          <line x1="48" y1="142" x2="72" y2="90" stroke="${stroke}" stroke-width="2" stroke-linecap="round"/>
-          <circle cx="68" cy="88" r="6" fill="#d1d5db" stroke="${stroke}" stroke-width="2"/>
-          <line x1="68" y1="88" x2="110" y2="54" stroke="${shadeFill}" stroke-width="5" stroke-linecap="round"/>
-          <circle cx="110" cy="54" r="5.5" fill="#d1d5db" stroke="${stroke}" stroke-width="2"/>
-          <path d="M104 54 L132 62 L138 90 L98 78 Z" fill="${shadeFill}" stroke="${stroke}" stroke-width="2.5" stroke-linejoin="round"/>
-          <ellipse cx="118" cy="84" rx="18" ry="6" fill="#fff3c4" stroke="${stroke}" stroke-width="1.5"/>
-        </svg>`;
-    }
+    const iconSrc = LAMP_ICON_FILES[style] || LAMP_ICON_FILES.classic;
+    const raw = (hex || "#343a44").toLowerCase();
+    // Ensure high contrast on light backgrounds even for White or Nickel finishes
+    let tint = raw;
+    if (raw === "#e7eaef" || raw === "#ebedf2") tint = "#64748b";
+    else if (raw === "#9ca5b0") tint = "#5a6675";
+    else if (raw === "#7ba7c7") tint = "#2b6ca3";
 
-    if (style === "slim") {
-      // NÄVLINGE compact slim LED lamp
-      return `
-        <svg viewBox="0 0 180 180" aria-hidden="true">
-          ${glow}
-          <ellipse cx="64" cy="152" rx="34" ry="8" fill="${shadeFill}" stroke="${stroke}" stroke-width="2.5"/>
-          <path d="M62 148 C54 102, 58 46, 108 54" fill="none" stroke="${shadeFill}" stroke-width="6.5" stroke-linecap="round"/>
-          <path d="M102 47 L132 58 L126 78 L98 68 Z" fill="${shadeFill}" stroke="${stroke}" stroke-width="2.5" stroke-linejoin="round"/>
-          <ellipse cx="112" cy="73" rx="13" ry="4.5" fill="#fff0b3" stroke="${stroke}" stroke-width="1.5"/>
-        </svg>`;
-    }
-
-    if (style === "modern") {
-      // NYMÅNE modern charging base lamp
-      return `
-        <svg viewBox="0 0 180 180" aria-hidden="true">
-          ${glow}
-          <rect x="34" y="144" width="66" height="14" rx="7" fill="${shadeFill}" stroke="${stroke}" stroke-width="2.5"/>
-          <circle cx="78" cy="151" r="3" fill="#ffdb00"/>
-          <line x1="56" y1="144" x2="56" y2="56" stroke="${shadeFill}" stroke-width="6" stroke-linecap="round"/>
-          <line x1="56" y1="56" x2="108" y2="56" stroke="${shadeFill}" stroke-width="5" stroke-linecap="round"/>
-          <path d="M100 56 L130 56 L138 86 L94 86 Z" fill="${shadeFill}" stroke="${stroke}" stroke-width="2.5" stroke-linejoin="round"/>
-          <ellipse cx="116" cy="86" rx="20" ry="5" fill="#fff3c4" stroke="${stroke}" stroke-width="1.5"/>
-        </svg>`;
-    }
-
-    if (style === "heavy") {
-      // HEKTAR oversized industrial lamp
-      return `
-        <svg viewBox="0 0 180 180" aria-hidden="true">
-          ${glow}
-          <ellipse cx="66" cy="154" rx="44" ry="11" fill="${shadeFill}" stroke="${stroke}" stroke-width="2.5"/>
-          <line x1="60" y1="146" x2="46" y2="88" stroke="${shadeFill}" stroke-width="7" stroke-linecap="round"/>
-          <line x1="46" y1="88" x2="104" y2="44" stroke="${shadeFill}" stroke-width="7" stroke-linecap="round"/>
-          <circle cx="46" cy="88" r="7" fill="#d1d5db" stroke="${stroke}" stroke-width="2"/>
-          <path d="M94 42 L138 56 L146 96 L86 80 Z" fill="${shadeFill}" stroke="${stroke}" stroke-width="3" stroke-linejoin="round"/>
-          <ellipse cx="116" cy="89" rx="28" ry="7" fill="#fff3c4" stroke="${stroke}" stroke-width="1.5"/>
-        </svg>`;
-    }
-
-    // Default "classic" (FORSÅ)
+    const halo = warmGlow ? `<span class="lamp-warm-halo" aria-hidden="true"></span>` : "";
     return `
-      <svg viewBox="0 0 180 180" aria-hidden="true">
-        ${glow}
-        <ellipse cx="64" cy="152" rx="36" ry="9" fill="${shadeFill}" stroke="${stroke}" stroke-width="2.5"/>
-        <line x1="60" y1="146" x2="50" y2="92" stroke="${shadeFill}" stroke-width="5.5" stroke-linecap="round"/>
-        <circle cx="50" cy="92" r="5.5" fill="#d1d5db" stroke="${stroke}" stroke-width="2"/>
-        <line x1="50" y1="92" x2="106" y2="54" stroke="${shadeFill}" stroke-width="5.5" stroke-linecap="round"/>
-        <path d="M98 52 L130 62 L134 88 L92 78 Z" fill="${shadeFill}" stroke="${stroke}" stroke-width="2.5" stroke-linejoin="round"/>
-        <ellipse cx="113" cy="83" rx="18" ry="5.5" fill="#fff3c4" stroke="${stroke}" stroke-width="1.5"/>
-      </svg>`;
+      <span class="lamp-icon-wrap">
+        ${halo}
+        <span class="lamp-masked-icon" role="img" aria-label="Desk lamp illustration"
+          style="background-color:${tint};-webkit-mask-image:url('${iconSrc}');mask-image:url('${iconSrc}');"></span>
+      </span>`;
   }
 
   // Navigation & Header/Scaffold Sync
@@ -1827,7 +1775,7 @@
             ${state.cart.map((it) => `
               <div style="display:flex;justify-content:space-between;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid var(--border);">
                 <div style="display:flex;align-items:center;gap:12px;">
-                  <div class="bag-thumb" style="width:68px;height:68px;">${renderLampSvg(it.style, it.finishHex, it.bulbIncluded || it.bulbId !== "none")}</div>
+                  <div class="bag-thumb sm-thumb" style="width:68px;height:68px;">${renderLampSvg(it.style, it.finishHex, it.bulbIncluded || it.bulbId !== "none")}</div>
                   <div>
                     <strong>${it.qty}× ${escapeHtml(it.name)}</strong> · Finish: <strong>${escapeHtml(it.finishLabel)}</strong>
                     <div style="font-size:13px;color:var(--text-secondary);">${escapeHtml(it.bulbName)}</div>
