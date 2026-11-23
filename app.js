@@ -276,6 +276,8 @@
   const toastRegion = document.getElementById("toastRegion");
   const locationModalBackdrop = document.getElementById("locationModalBackdrop");
   const modalZipInput = document.getElementById("modalZipInput");
+  const oosModalBackdrop = document.getElementById("oosModalBackdrop");
+  const oosModalContent = document.getElementById("oosModalContent");
   const processingOverlay = document.getElementById("processingOverlay");
   const procStoreName = document.getElementById("procStoreName");
   const scopeBanner = document.getElementById("scopeBanner");
@@ -782,7 +784,7 @@
           <div class="config-section">
             <div class="config-heading">
               <span>1. Choose Finish</span>
-              <span class="badge ${finish.inStock ? "badge-success" : "badge-danger"}">${finish.inStock ? "In Stock" : "Unavailable"}</span>
+              <span class="badge ${finish.inStock ? "badge-success" : "badge-danger"}">${finish.inStock ? "In Stock" : "Out of Stock"}</span>
             </div>
             <div class="option-list">
               ${prod.finishes.map((f) => {
@@ -793,10 +795,10 @@
                       <span class="swatch-dot" style="width:20px;height:20px;background:${f.hex};"></span>
                       <span>
                         <span class="option-title">${escapeHtml(f.label)}</span>
+                        ${!f.inStock ? `<span class="option-tag-row"><span class="badge badge-danger">Out of Stock</span></span>` : ""}
                         <span class="option-meta">${escapeHtml(f.stockText)}</span>
                       </span>
                     </span>
-                    <span class="badge ${f.inStock ? "badge-success" : "badge-danger"}">${f.inStock ? "Available" : "Out of Stock"}</span>
                   </button>
                 `;
               }).join("")}
@@ -820,7 +822,8 @@
                   return `
                     <button type="button" class="option-card ${isSel ? "selected" : ""}" data-bulb-id="${b.id}">
                       <span>
-                        <span class="option-title">${escapeHtml(b.shortName)} ${b.recommended ? `<span class="badge badge-info" style="margin-left:4px;">Recommended</span>` : ""}</span>
+                        <span class="option-title">${escapeHtml(b.shortName)}</span>
+                        ${b.recommended ? `<span class="option-tag-row"><span class="badge badge-info">Recommended</span></span>` : ""}
                         <span class="option-meta">${escapeHtml(b.note)}</span>
                       </span>
                       <span class="option-price">${b.price > 0 ? "+" + money(b.price) : "$0.00"}</span>
@@ -877,9 +880,21 @@
             </div>
           </div>
 
+          ${!finish.inStock ? (() => {
+            const altInStock = prod.finishes.find((f) => f.inStock) || prod.finishes[0];
+            return `
+              <div class="oos-inline-note" role="status">
+                <span><strong>${escapeHtml(finish.label)}</strong> is out of stock at ${escapeHtml(state.area.store)}. Choose an in-stock finish to add to bag.</span>
+                <button type="button" class="link-btn" id="btnInlineSwitchInStock">Switch to ${escapeHtml(altInStock.label)}</button>
+              </div>
+            `;
+          })() : ""}
+
           <div style="margin-top:16px;display:flex;flex-direction:column;gap:10px;">
-            <button type="button" class="btn btn-primary btn-block" id="btnAddConfiguredToBag">
-              Add Configured Lamp to Bag (${money(preview.itemSubtotal)})
+            <button type="button" class="btn btn-primary btn-block" id="btnAddConfiguredToBag" ${!finish.inStock ? "disabled aria-disabled=\"true\"" : ""}>
+              ${finish.inStock
+                ? `Add Configured Lamp to Bag (${money(preview.itemSubtotal)})`
+                : `Out of Stock — Select an In-Stock Finish to Add`}
             </button>
             ${state.cart.length > 0 ? `<button type="button" class="btn btn-secondary btn-block" id="btnPdpViewBag">View Shopping Bag (${cartItemCount()} item${cartItemCount() === 1 ? "" : "s"})</button>` : ""}
           </div>
@@ -891,27 +906,28 @@
     document.getElementById("btnBackToCatalog").addEventListener("click", () => goTo("S1"));
     document.getElementById("btnPdpChangeZip").addEventListener("click", openLocationModal);
 
-    // Finish Selection -> Selecting an Out-of-Stock Finish triggers S3 Recovery!
+    const inlineSwitchBtn = document.getElementById("btnInlineSwitchInStock");
+    if (inlineSwitchBtn) {
+      inlineSwitchBtn.addEventListener("click", () => {
+        const alt = prod.finishes.find((f) => f.inStock) || prod.finishes[0];
+        state.selectedFinishId = alt.id;
+        setToast("success", `Switched finish to <strong>${escapeHtml(alt.label)}</strong> (In Stock at ${escapeHtml(state.area.store)}).`);
+        render();
+      });
+    }
+
+    // Finish Selection -> Selecting an Out-of-Stock Finish keeps preview on S2, disables Add to Bag, and shows S3 Recovery Pop-Up!
     document.querySelectorAll("[data-finish-id]").forEach((btn) => {
       btn.addEventListener("click", () => {
         const fid = btn.dataset.finishId;
         const chosen = prod.finishes.find((f) => f.id === fid);
         if (!chosen) return;
-        if (!chosen.inStock) {
-          const alt = prod.finishes.find((f) => f.inStock) || prod.finishes[0];
-          openRecoveryS3({
-            kind: "out-of-stock",
-            returnTo: "S2",
-            productId: prod.id,
-            productName: prod.name,
-            attemptedFinish: chosen.label,
-            alternativeFinish: alt,
-            preservedSummary: `${prod.name} (${money(prod.price)}), bulb choice (${prod.bulbIncluded ? "Built-in Warm LED" : getBulb(state.selectedBulbId).shortName}), budget limit (${money(state.filters.maxBudget)}), and store (${state.area.store}).`
-          });
-          return;
-        }
         state.selectedFinishId = fid;
         render();
+        if (!chosen.inStock) {
+          const alt = prod.finishes.find((f) => f.inStock) || prod.finishes[0];
+          openOosModal(prod, chosen, alt);
+        }
       });
     });
 
@@ -944,6 +960,7 @@
     });
 
     document.getElementById("btnAddConfiguredToBag").addEventListener("click", () => {
+      if (!finish.inStock) return;
       addCurrentPdpToBag();
       setToast(
         "success",
@@ -2018,11 +2035,78 @@
   });
 
   // =========================================================================
+  // OUT-OF-STOCK FINISH RECOVERY POP-UP MODAL (S3 Overlay on S2)
+  // =========================================================================
+  function openOosModal(prod, chosen, alt) {
+    const bulbLabel = prod.bulbIncluded ? "Built-in Warm 2700K LED" : getBulb(state.selectedBulbId).shortName;
+    protoStateBadge.textContent = "State S3: Option / Fulfillment Recovery (Pop-up)";
+    oosModalContent.innerHTML = `
+      <div class="modal-head">
+        <div>
+          <span class="eyebrow" style="color:var(--warn);">State S3 · Out-of-Stock Recovery</span>
+          <h2 id="oosModalTitle">${escapeHtml(prod.name)} in "${escapeHtml(chosen.label)}" is out of stock</h2>
+        </div>
+        <button type="button" class="icon-close-btn" id="btnCloseOosModal" aria-label="Close out-of-stock warning">&times;</button>
+      </div>
+      <p class="modal-desc">
+        <strong>${escapeHtml(chosen.label)}</strong> is currently unavailable at <strong>${escapeHtml(state.area.store)}</strong> (ZIP ${escapeHtml(state.area.zip)}). You can stay on this page to preview the finish (<em>Add to Bag</em> stays disabled), or switch to an in-stock finish in one click.
+      </p>
+      <div class="preserved-box" style="margin:12px 0 16px;">
+        <strong>What stayed safely preserved:</strong> ${escapeHtml(prod.name)} (${money(prod.price)}), bulb choice (${escapeHtml(bulbLabel)}), budget limit (${money(state.filters.maxBudget)}), and store (${escapeHtml(state.area.store)}).
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <button type="button" class="btn btn-primary btn-block" id="btnModalSwitchInStock">
+          Switch to ${escapeHtml(alt.label)} (${escapeHtml(alt.stockText)})
+        </button>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button type="button" class="btn btn-secondary" style="flex:1;" id="btnModalKeepPreview">
+            Keep Previewing ${escapeHtml(chosen.label)}
+          </button>
+          <button type="button" class="btn btn-secondary" style="flex:1;" id="btnModalBrowseOthers">
+            Browse Other Lamps
+          </button>
+        </div>
+      </div>
+    `;
+    oosModalBackdrop.classList.remove("hidden");
+
+    document.getElementById("btnCloseOosModal").addEventListener("click", closeOosModal);
+    document.getElementById("btnModalKeepPreview").addEventListener("click", closeOosModal);
+    document.getElementById("btnModalSwitchInStock").addEventListener("click", () => {
+      state.selectedFinishId = alt.id;
+      closeOosModal();
+      setToast("success", `Switched finish to <strong>${escapeHtml(alt.label)}</strong> (In Stock at ${escapeHtml(state.area.store)}). Your bulb and budget choices were preserved.`);
+      render();
+    });
+    document.getElementById("btnModalBrowseOthers").addEventListener("click", () => {
+      closeOosModal();
+      goTo("S1");
+    });
+  }
+
+  function closeOosModal() {
+    oosModalBackdrop.classList.add("hidden");
+    updateChrome();
+  }
+
+  oosModalBackdrop.addEventListener("click", (e) => {
+    if (e.target === oosModalBackdrop) closeOosModal();
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      if (!oosModalBackdrop.classList.contains("hidden")) closeOosModal();
+      if (!locationModalBackdrop.classList.contains("hidden")) closeLocationModal();
+    }
+  });
+
+  // =========================================================================
   // GLOBAL CONTROLS & RESET
   // =========================================================================
   function resetPrototype() {
     state = createInitialState();
     closeLocationModal();
+    closeOosModal();
     processingOverlay.classList.add("hidden");
     clearToast();
     setToast("info", "Prototype reset to clean initial state (<strong>S1</strong>) — ready for a fresh walkthrough or usability participant.");
