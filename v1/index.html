@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IKEA Study Lighting — Redesigned Shopping Workflow (CSE 463 Pre-Test Prototype v1.0)</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Subtle Prototype Utility Bar (Identifies Pre-Test Version & State ID for Review) -->
+  <div class="proto-bar" role="region" aria-label="Prototype status bar">
+    <div class="proto-bar-inner">
+      <div class="proto-meta">
+        <span class="proto-pill">CSE 463 · Pre-Test Prototype v1.0</span>
+        <span class="proto-state-tag" id="protoStateBadge">State S1: Catalog &amp; Guided Filter</span>
+        <span class="proto-sim-note">Simulated inventory, pricing &amp; checkout (use fictional details)</span>
+      </div>
+      <div class="proto-actions">
+        <button type="button" class="proto-btn proto-btn-ghost" id="btnHelpInfo" aria-expanded="false">About / Scope</button>
+        <button type="button" class="proto-btn proto-btn-reset" id="btnGlobalReset">Reset Prototype</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Collapsible Scope / Opening Note Drawer (Non-intrusive) -->
+  <div class="scope-banner hidden" id="scopeBanner" role="region" aria-label="Prototype scope and instructions">
+    <div class="scope-banner-inner">
+      <div>
+        <strong>Prototype Scope &amp; Simulated Functions:</strong> This interactive prototype covers states <strong>S1–S8</strong> of a redesigned IKEA US compact desk-lamp workflow. Live catalog search, budget filtering, finish stock availability, E26 bulb pairing, $35.00 delivery threshold checks, ZIP validation (<code>00000</code> triggers recovery), locked store/date checkout, form error recovery, and simulated order processing run locally in the browser with no real payments or external server calls.
+      </div>
+      <button type="button" class="icon-close-btn" id="btnCloseScope" aria-label="Close scope note">&times;</button>
+    </div>
+  </div>
+
+  <!-- Main Site Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <button type="button" class="brand-logo" id="btnLogoHome" aria-label="IKEA Study Lighting Home">
+        <span class="ikea-badge">IKEA</span>
+        <span class="brand-sub">Study Lighting</span>
+      </button>
+
+      <nav class="workflow-stepper" aria-label="Shopping progress" id="workflowStepper">
+        <button type="button" class="step-pill" data-step="S1"><span class="step-num">1</span> Find</button>
+        <span class="step-sep" aria-hidden="true">›</span>
+        <button type="button" class="step-pill" data-step="S2"><span class="step-num">2</span> Configure</button>
+        <span class="step-sep" aria-hidden="true">›</span>
+        <button type="button" class="step-pill" data-step="S4"><span class="step-num">3</span> Bag</button>
+        <span class="step-sep" aria-hidden="true">›</span>
+        <button type="button" class="step-pill" data-step="S5"><span class="step-num">4</span> Checkout</button>
+        <span class="step-sep" aria-hidden="true">›</span>
+        <button type="button" class="step-pill" data-step="S7"><span class="step-num">5</span> Review</button>
+      </nav>
+
+      <div class="header-controls">
+        <button type="button" class="location-chip" id="btnOpenLocation" title="Update ZIP code and pickup store">
+          <svg class="ico" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <path d="M10 18s6-5.2 6-10A6 6 0 1 0 4 8c0 4.8 6 10 6 10Z" stroke="currentColor" stroke-width="1.6"/>
+            <circle cx="10" cy="8" r="2.2" stroke="currentColor" stroke-width="1.6"/>
+          </svg>
+          <span id="headerLocationText">85281 · IKEA Phoenix, AZ</span>
+        </button>
+
+        <button type="button" class="bag-chip" id="btnOpenBag" aria-label="Open shopping bag">
+          <svg class="ico" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <path d="M4 6.5h12l-1 10.5H5L4 6.5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+            <path d="M7.2 6.5V5a2.8 2.8 0 0 1 5.6 0v1.5" stroke="currentColor" stroke-width="1.6"/>
+          </svg>
+          <span>Bag</span>
+          <span class="bag-count" id="headerBagCount">0</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Persistent Memory Scaffold Bar (Shows Active Budget, Selected Fulfillment & Running Est. Total) -->
+  <div class="scaffold-bar" id="scaffoldBar" aria-label="Active shopping constraints and estimate">
+    <div class="scaffold-inner">
+      <div class="scaffold-item">
+        <span class="scaffold-label">Target Budget:</span>
+        <strong id="scaffoldBudget">$60.00 max</strong>
+      </div>
+      <div class="scaffold-divider" aria-hidden="true"></div>
+      <div class="scaffold-item">
+        <span class="scaffold-label">Fulfillment:</span>
+        <strong id="scaffoldFulfillment">Click &amp; Collect · IKEA Phoenix, AZ ($2.00 · Nov 25)</strong>
+      </div>
+      <div class="scaffold-divider" aria-hidden="true"></div>
+      <div class="scaffold-item">
+        <span class="scaffold-label">Est. Total (incl. fee &amp; tax):</span>
+        <strong id="scaffoldTotal">$0.00</strong>
+        <span class="budget-status-pill ok" id="scaffoldBudgetStatus">Within budget</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Non-Interruptive Toast / Undo Bar -->
+  <div class="toast-region" id="toastRegion" aria-live="polite"></div>
+
+  <!-- Main Application Mount -->
+  <main class="main-container" id="appMain" tabindex="-1"></main>
+
+  <!-- Inline Location / ZIP Editor Modal (Triggers S3 Recovery on Invalid ZIP like 00000) -->
+  <div class="modal-backdrop hidden" id="locationModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="locModalTitle">
+    <div class="modal-card">
+      <div class="modal-head">
+        <div>
+          <span class="eyebrow">Store &amp; Delivery Area</span>
+          <h2 id="locModalTitle">Update your ZIP code</h2>
+        </div>
+        <button type="button" class="icon-close-btn" id="btnCloseLocModal" aria-label="Close location dialog">&times;</button>
+      </div>
+      <p class="modal-desc">
+        Your ZIP determines delivery availability and your locked local IKEA pickup store. Changing ZIP will always show store/date changes before updating your order.
+      </p>
+      <form id="locationForm" novalidate>
+        <label class="field-label" for="modalZipInput">5-digit US ZIP code</label>
+        <div class="zip-input-row">
+          <input type="text" id="modalZipInput" inputmode="numeric" maxlength="10" placeholder="e.g., 85281" autocomplete="postal-code" />
+          <button type="submit" class="btn btn-primary">Check ZIP</button>
+        </div>
+        <p class="field-hint">Supported demo areas: <code>85281</code> / <code>85259</code> (Phoenix/Tempe, AZ), <code>90210</code> (Burbank, CA), <code>98101</code> (Renton, WA). Try <code>00000</code> to test recovery.</p>
+      </form>
+      <div class="modal-footer-links">
+        <button type="button" class="link-btn" id="btnQuickZipPhoenix">Use 85281 (Tempe / IKEA Phoenix, AZ)</button>
+        <button type="button" class="link-btn" id="btnQuickZipInvalid">Simulate invalid ZIP (00000)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Simulated Order Processing Overlay (Distinguishes Processing vs Confirmed — Codex P5) -->
+  <div class="modal-backdrop hidden" id="processingOverlay" role="status" aria-live="assertive">
+    <div class="processing-card">
+      <div class="spinner" aria-hidden="true"></div>
+      <h2>Processing simulated order…</h2>
+      <p>Verifying stock at <strong id="procStoreName">IKEA Phoenix, AZ</strong> and generating your receipt. Please do not click back or resubmit.</p>
+      <div class="proc-steps">
+        <span class="proc-step done">1. Selections verified</span>
+        <span class="proc-step active">2. Confirming fulfillment slot…</span>
+        <span class="proc-step">3. Issuing durable receipt</span>
+      </div>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <span>CSE 463 Final Project · Human-Centered Redesign of IKEA US Study Lighting Flow</span>
+      <span>Pre-Test Prototype v1.0 · Terrence Li · All prices, inventory &amp; transactions simulated</span>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
