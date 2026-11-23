@@ -236,7 +236,8 @@
       activeProductId: "tertial",
       selectedFinishId: "dark-gray",
       selectedBulbId: "solhetta-450",
-      bagReturnScreen: "S1",
+      // True LIFO Navigation Stack for Back Button
+      navStack: [],
       // S3 recovery payload
       recovery: null,
       // S4 Shopping Bag
@@ -419,11 +420,73 @@
       </span>`;
   }
 
-  // Navigation & Header/Scaffold Sync
-  function goTo(screen, options = {}) {
-    if (screen === "S4" && (state.screen === "S2" || state.screen === "S1")) {
-      state.bagReturnScreen = state.screen;
+  // Navigation Stack Helpers (True LIFO Back Navigation)
+  function getNavEntryLabel(entry) {
+    if (!entry) return "Catalog";
+    switch (entry.screen) {
+      case "S1": return "Catalog";
+      case "S2": return getProduct(entry.productId || state.activeProductId).name;
+      case "S4": return "Shopping Bag";
+      case "S5":
+      case "S6": return "Checkout Details";
+      case "S7": return "Order Review";
+      default: return "Previous Page";
     }
+  }
+
+  function peekBackEntry() {
+    for (let i = state.navStack.length - 1; i >= 0; i--) {
+      const e = state.navStack[i];
+      if ((e.screen === "S5" || e.screen === "S6" || e.screen === "S7") && state.cart.length === 0) {
+        continue;
+      }
+      return e;
+    }
+    return null;
+  }
+
+  function goBack(fallbackScreen = "S1") {
+    while (state.navStack.length > 0) {
+      const entry = state.navStack.pop();
+      if ((entry.screen === "S5" || entry.screen === "S6" || entry.screen === "S7") && state.cart.length === 0) {
+        continue;
+      }
+      if (entry.screen === "S2" && entry.productId) {
+        state.activeProductId = entry.productId;
+        const prod = getProduct(entry.productId);
+        if (entry.finishId && prod.finishes.some((f) => f.id === entry.finishId)) {
+          state.selectedFinishId = entry.finishId;
+        }
+        if (entry.bulbId) {
+          state.selectedBulbId = entry.bulbId;
+        }
+      }
+      goTo(entry.screen, { isBack: true });
+      return;
+    }
+    goTo(fallbackScreen, { isBack: true });
+  }
+
+  function goTo(screen, options = {}) {
+    const currLogical = state.screen === "S6" ? "S5" : state.screen;
+    const nextLogical = screen === "S6" ? "S5" : screen;
+
+    if (screen === "S8") {
+      state.navStack = [];
+    } else if (!options.isBack && !options.replace && currLogical !== nextLogical && state.screen !== "S3") {
+      const entry = {
+        screen: currLogical,
+        productId: state.activeProductId,
+        finishId: state.selectedFinishId,
+        bulbId: state.selectedBulbId
+      };
+      const top = state.navStack[state.navStack.length - 1];
+      const sameAsTop = top && top.screen === entry.screen && (entry.screen !== "S2" || top.productId === entry.productId);
+      if (!sameAsTop) {
+        state.navStack.push(entry);
+      }
+    }
+
     if (!options.keepPrev) {
       state.prevScreen = state.screen;
     }
@@ -745,9 +808,12 @@
 
     const pct = Math.min(100, Math.round((preview.combinedSub / DELIVERY_MIN) * 100));
 
+    const backTargetS2 = peekBackEntry();
+    const backLabelS2 = backTargetS2 ? getNavEntryLabel(backTargetS2) : "Catalog";
+
     appMain.innerHTML = `
       <div class="back-row">
-        <button type="button" class="link-btn" id="btnBackToCatalog">← Back to Catalog</button>
+        <button type="button" class="link-btn" id="btnBackToCatalog">← Back to ${escapeHtml(backLabelS2)}</button>
       </div>
 
       <div class="pdp-layout">
@@ -905,7 +971,7 @@
     `;
 
     // Bind S2 Events
-    document.getElementById("btnBackToCatalog").addEventListener("click", () => goTo("S1"));
+    document.getElementById("btnBackToCatalog").addEventListener("click", () => goBack("S1"));
     document.getElementById("btnPdpChangeZip").addEventListener("click", openLocationModal);
 
     const inlineSwitchBtn = document.getElementById("btnInlineSwitchInStock");
@@ -1129,14 +1195,14 @@
 
     // Bind S3 Recovery Actions
     document.getElementById("btnRecCancelReturn").addEventListener("click", () => {
-      goTo(rec.returnTo || "S2", { keepPrev: true });
+      goBack(rec.returnTo || "S2");
     });
 
     if (rec.kind === "out-of-stock") {
       document.getElementById("btnRecSwitchFinish").addEventListener("click", () => {
         state.selectedFinishId = rec.alternativeFinish.id;
-        setToast("success", `Switched finish to <strong>${escapeHtml(rec.alternativeFinish.label)}</strong> (In Stock at ${escapeHtml(state.area.store)}). Your bulb and budget choices were preserved.`);
-        goTo("S2", { keepPrev: true });
+        setToast("success", `Switched finish to <strong>${escapeHtml(rec.alternativeFinish.label)}</strong> (In Stock).`);
+        goBack("S2");
       });
       document.getElementById("btnRecBrowseOther").addEventListener("click", () => goTo("S1"));
     }
@@ -1144,8 +1210,8 @@
     if (rec.kind === "delivery-minimum") {
       document.getElementById("btnRecUsePickup").addEventListener("click", () => {
         state.fulfillment = "pickup";
-        setToast("success", `Fulfillment set to <strong>Click &amp; Collect at ${escapeHtml(state.area.store)} (${money(PICKUP_FEE)} · ${escapeHtml(state.area.pickupDate)})</strong>.`);
-        goTo(rec.returnTo || "S2", { keepPrev: true });
+        setToast("success", `Fulfillment set to <strong>Click &amp; Collect (${money(PICKUP_FEE)} · ${escapeHtml(state.area.pickupDate)})</strong>.`);
+        goBack(rec.returnTo || "S2");
       });
       document.getElementById("btnRecAddOrganizer").addEventListener("click", () => {
         // Ensure lamp is in bag if triggered from S2
@@ -1193,12 +1259,12 @@
           return;
         }
         applyValidArea(SERVICE_AREAS[val], rec.returnTo === "S5");
-        setToast("success", `Location verified: <strong>${val} · ${SERVICE_AREAS[val].store}</strong>. All selections preserved.`);
-        goTo(rec.returnTo || "S4", { keepPrev: true });
+        setToast("success", `Location verified: <strong>${val} · ${SERVICE_AREAS[val].store}</strong>.`);
+        goBack(rec.returnTo || "S4");
       });
       document.getElementById("btnRecRestoreDefaultZip").addEventListener("click", () => {
         setToast("info", `Kept verified location <strong>${escapeHtml(state.area.zip)} · ${escapeHtml(state.area.store)}</strong>.`);
-        goTo(rec.returnTo || "S4", { keepPrev: true });
+        goBack(rec.returnTo || "S4");
       });
     }
   }
@@ -1209,14 +1275,13 @@
   function renderS4() {
     const totals = computeCartTotals();
 
-    const returnProd = state.bagReturnScreen === "S2" ? getProduct(state.activeProductId) : null;
+    const backEntryS4 = peekBackEntry();
+    const backLabelS4 = backEntryS4 ? getNavEntryLabel(backEntryS4) : "Catalog";
 
     if (state.cart.length === 0) {
       appMain.innerHTML = `
         <div class="back-row">
-          ${returnProd
-            ? `<button type="button" class="link-btn" id="btnEmptyBagBackProduct">← Back to ${escapeHtml(returnProd.name)}</button>`
-            : `<button type="button" class="link-btn" id="btnEmptyBagBackCatalog">← Back to Catalog</button>`}
+          <button type="button" class="link-btn" id="btnEmptyBagBack">← Back to ${escapeHtml(backLabelS4)}</button>
         </div>
         <div class="card" style="max-width:640px;margin:20px auto;text-align:center;padding:40px;">
           <span class="eyebrow">Shopping Bag</span>
@@ -1228,10 +1293,7 @@
           </div>
         </div>
       `;
-      const emptyBackProd = document.getElementById("btnEmptyBagBackProduct");
-      if (emptyBackProd) emptyBackProd.addEventListener("click", () => goTo("S2"));
-      const emptyBackCat = document.getElementById("btnEmptyBagBackCatalog");
-      if (emptyBackCat) emptyBackCat.addEventListener("click", () => goTo("S1"));
+      document.getElementById("btnEmptyBagBack").addEventListener("click", () => goBack("S1"));
       document.getElementById("btnEmptyBagShop").addEventListener("click", () => goTo("S1"));
       const undoBtn = document.getElementById("btnUndoLastRemove");
       if (undoBtn) {
@@ -1249,10 +1311,8 @@
 
     appMain.innerHTML = `
       <div class="back-row" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
-        ${returnProd
-          ? `<button type="button" class="link-btn" id="btnBagBackProduct">← Back to ${escapeHtml(returnProd.name)}</button>
-             <button type="button" class="link-btn" id="btnBagBackCatalog" style="color:var(--text-secondary);">Browse All Lamps</button>`
-          : `<button type="button" class="link-btn" id="btnBagBackCatalog">← Back to Catalog</button>`}
+        <button type="button" class="link-btn" id="btnBagBack">← Back to ${escapeHtml(backLabelS4)}</button>
+        ${backEntryS4 && backEntryS4.screen !== "S1" ? `<button type="button" class="link-btn" id="btnBagBackCatalog" style="color:var(--text-secondary);">Browse All Lamps</button>` : ""}
       </div>
 
       <div class="page-head">
@@ -1391,8 +1451,7 @@
     `;
 
     // Bind S4 Events
-    const bagBackProd = document.getElementById("btnBagBackProduct");
-    if (bagBackProd) bagBackProd.addEventListener("click", () => goTo("S2"));
+    document.getElementById("btnBagBack").addEventListener("click", () => goBack("S1"));
     const bagBackCat = document.getElementById("btnBagBackCatalog");
     if (bagBackCat) bagBackCat.addEventListener("click", () => goTo("S1"));
     document.getElementById("btnBagContinueShop").addEventListener("click", () => goTo("S1"));
@@ -1541,9 +1600,12 @@
       </div>
     ` : "";
 
+    const backEntryS5 = peekBackEntry();
+    const backLabelS5 = backEntryS5 ? getNavEntryLabel(backEntryS5) : "Shopping Bag";
+
     appMain.innerHTML = `
       <div class="back-row" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
-        <button type="button" class="link-btn" id="btnCheckoutBackBag">← Edit Bag</button>
+        <button type="button" class="link-btn" id="btnCheckoutBackBag">← Back to ${escapeHtml(backLabelS5)}</button>
         <button type="button" class="link-btn" id="btnFillSampleFictional">Fill sample details</button>
       </div>
 
@@ -1638,7 +1700,7 @@
             </div>
 
             <div style="margin-top:22px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
-              <button type="button" class="btn btn-secondary" id="btnCheckoutEditBagBottom">← Return to Bag</button>
+              <button type="button" class="btn btn-secondary" id="btnCheckoutEditBagBottom">← Back to ${escapeHtml(backLabelS5)}</button>
               <button type="submit" class="btn btn-primary" id="btnContinueReview">Continue to Final Order Review →</button>
             </div>
           </form>
@@ -1681,8 +1743,8 @@
       state.checkout.stateCode = e.target.value;
     });
 
-    document.getElementById("btnCheckoutBackBag").addEventListener("click", () => goTo("S4"));
-    document.getElementById("btnCheckoutEditBagBottom").addEventListener("click", () => goTo("S4"));
+    document.getElementById("btnCheckoutBackBag").addEventListener("click", () => goBack("S4"));
+    document.getElementById("btnCheckoutEditBagBottom").addEventListener("click", () => goBack("S4"));
     document.getElementById("btnCheckoutChangeZip").addEventListener("click", openLocationModal);
 
     document.getElementById("btnFillSampleFictional").addEventListener("click", () => {
@@ -1781,8 +1843,13 @@
     const totals = computeCartTotals();
     const isDelivery = totals.effectiveMode === "delivery";
     const c = state.checkout;
+    const backEntryS7 = peekBackEntry();
+    const backLabelS7 = backEntryS7 ? getNavEntryLabel(backEntryS7) : "Checkout Details";
 
     appMain.innerHTML = `
+      <div class="back-row">
+        <button type="button" class="link-btn" id="btnReviewBack">← Back to ${escapeHtml(backLabelS7)}</button>
+      </div>
       <div class="page-head">
         <div>
           <span class="eyebrow">Step 5 · Deliberate Review Before Commitment</span>
@@ -1870,6 +1937,7 @@
       </div>
     `;
 
+    document.getElementById("btnReviewBack").addEventListener("click", () => goBack("S5"));
     document.getElementById("btnReviewEditBag").addEventListener("click", () => goTo("S4"));
     document.getElementById("btnReviewEditDetails").addEventListener("click", () => goTo("S5"));
     document.getElementById("btnPlaceSimulatedOrder").addEventListener("click", () => {
