@@ -537,16 +537,16 @@
     appMain.innerHTML = `
       <div class="page-head">
         <div>
-          <span class="eyebrow">Step 1 · Transparent Catalog &amp; Budget Filtering</span>
+          <span class="eyebrow">Step 1 · Catalog</span>
           <h1 class="page-title">Compact Study Desk Lamps</h1>
-          <p class="page-subtitle">Upfront bulb requirements, desk footprint, and $35.00 delivery rules shown on every card—no surprise thresholds after adding to bag.</p>
+          <p class="page-subtitle">Compare compact lamps, bulb compatibility, and pickup or delivery options.</p>
         </div>
       </div>
 
       <div class="catalog-layout">
         <!-- Left Guided Filter Panel -->
         <aside class="card filter-panel" aria-label="Catalog filters">
-          <h3>Refine your options</h3>
+          <h3>Filter</h3>
 
           <div class="filter-group">
             <label class="filter-label-row" for="catalogSearch">Search lamps</label>
@@ -558,7 +558,7 @@
               <label for="budgetSlider">Maximum budget</label>
               <span class="badge badge-info">${money(state.filters.maxBudget)}</span>
             </div>
-            <p class="field-hint" style="margin-bottom:8px;">Custom limit (fixes rigid $40+ buckets). Lamp price shown below; full estimate with bulb &amp; fee updates live.</p>
+            <p class="field-hint" style="margin-bottom:8px;">Filter by max lamp price.</p>
             <div class="budget-input-row">
               <input type="range" id="budgetSlider" class="range-slider" min="15" max="80" step="5" value="${state.filters.maxBudget}" />
               <input type="number" id="budgetNum" class="budget-num" min="15" max="100" step="1" value="${state.filters.maxBudget}" aria-label="Maximum budget dollars" />
@@ -594,7 +594,7 @@
         <section aria-label="Search results">
           <div class="results-toolbar">
             <div class="results-count" id="resultsCountText">
-              Showing ${matches.length} of ${PRODUCTS.length} study lamps (counts verified)
+              Showing ${matches.length} of ${PRODUCTS.length} study lamps
             </div>
             <div style="display:flex;align-items:center;gap:8px;">
               <label for="sortSelect" style="font-size:13px;font-weight:600;color:var(--text-secondary);">Sort:</label>
@@ -647,7 +647,7 @@
                     </div>
                     <div class="card-fulfillment-note">${escapeHtml(deliveryNote)}</div>
                     <button type="button" class="btn btn-primary btn-block" data-select-product="${p.id}" data-default-finish="${defaultFinish.id}">
-                      Inspect specs &amp; configure options →
+                      Configure options →
                     </button>
                   </article>
                 `;
@@ -743,14 +743,14 @@
 
     appMain.innerHTML = `
       <div class="back-row">
-        <button type="button" class="link-btn" id="btnBackToCatalog">← Back to Study Lamps Catalog (filters preserved)</button>
+        <button type="button" class="link-btn" id="btnBackToCatalog">← Back to Catalog</button>
       </div>
 
       <div class="pdp-layout">
         <!-- Left: Visual + Specs (Above-the-fold clarity) -->
         <div class="pdp-visual-card">
           <div>
-            <span class="eyebrow">Step 2 · Inspect &amp; Configure · SKU ${prod.sku}</span>
+            <span class="eyebrow">Step 2 · Configure · SKU ${prod.sku}</span>
             <div class="card-header-row">
               <div>
                 <h1 class="page-title">${escapeHtml(prod.name)}</h1>
@@ -862,8 +862,8 @@
 
             <div class="threshold-meter ${preview.deliveryUnlocked ? "met" : ""}">
               ${preview.deliveryUnlocked
-                ? `<strong>Home Delivery unlocked!</strong> Your configured subtotal (${money(preview.combinedSub)}) meets the ${money(DELIVERY_MIN)} delivery minimum.`
-                : `<strong>Upfront notice:</strong> Home Delivery requires a ${money(DELIVERY_MIN)} order minimum (${money(preview.remainingForDelivery)} away). Click &amp; Collect at ${escapeHtml(state.area.store)} is available immediately for ${money(PICKUP_FEE)}.`}
+                ? `<strong>Home Delivery unlocked</strong> (${money(preview.combinedSub)} meets ${money(DELIVERY_MIN)} minimum).`
+                : `Add <strong>${money(preview.remainingForDelivery)}</strong> more for Home Delivery (${money(DELIVERY_MIN)} min). Pickup is ${money(PICKUP_FEE)}.`}
               <div class="meter-track"><div class="meter-fill" style="width:${pct}%"></div></div>
             </div>
           </div>
@@ -884,7 +884,7 @@
             const altInStock = prod.finishes.find((f) => f.inStock) || prod.finishes[0];
             return `
               <div class="oos-inline-note" role="status">
-                <span><strong>${escapeHtml(finish.label)}</strong> is out of stock at ${escapeHtml(state.area.store)}. Choose an in-stock finish to add to bag.</span>
+                <span><strong>${escapeHtml(finish.label)}</strong> is out of stock at ${escapeHtml(state.area.store)}.</span>
                 <button type="button" class="link-btn" id="btnInlineSwitchInStock">Switch to ${escapeHtml(altInStock.label)}</button>
               </div>
             `;
@@ -892,9 +892,7 @@
 
           <div style="margin-top:16px;display:flex;flex-direction:column;gap:10px;">
             <button type="button" class="btn btn-primary btn-block" id="btnAddConfiguredToBag" ${!finish.inStock ? "disabled aria-disabled=\"true\"" : ""}>
-              ${finish.inStock
-                ? `Add Configured Lamp to Bag (${money(preview.itemSubtotal)})`
-                : `Out of Stock — Select an In-Stock Finish to Add`}
+              Add to Bag (${money(preview.itemSubtotal)})
             </button>
             ${state.cart.length > 0 ? `<button type="button" class="btn btn-secondary btn-block" id="btnPdpViewBag">View Shopping Bag (${cartItemCount()} item${cartItemCount() === 1 ? "" : "s"})</button>` : ""}
           </div>
@@ -1048,52 +1046,52 @@
         </div>
       `;
     } else if (rec.kind === "delivery-minimum") {
-      heading = `Home Delivery requires a ${money(DELIVERY_MIN)} order minimum`;
-      diagnosis = `Your current subtotal is <strong>${money(rec.currentSubtotal)}</strong>—which is <strong>${money(rec.shortfall)}</strong> below IKEA's ${money(DELIVERY_MIN)} threshold for Home Delivery to ZIP <strong>${escapeHtml(state.area.zip)}</strong>. Pick how you want to continue:`;
+      heading = `Home Delivery requires a ${money(DELIVERY_MIN)} minimum`;
+      diagnosis = `Your subtotal is <strong>${money(rec.currentSubtotal)}</strong> (${money(rec.shortfall)} short of ${money(DELIVERY_MIN)} for ZIP ${escapeHtml(state.area.zip)}).`;
       optionsHtml = `
         <div class="recovery-options-grid">
           <div class="recovery-option-card recommended">
             <div>
-              <span class="badge badge-info" style="margin-bottom:8px;">Lowest Cost · Under Budget</span>
-              <h4>Switch to Click &amp; Collect (${money(PICKUP_FEE)})</h4>
-              <p>Pick up at <strong>${escapeHtml(state.area.store)}</strong> on <strong>${escapeHtml(state.area.pickupDate)}</strong>. No minimum order required.</p>
+              <span class="badge badge-info" style="margin-bottom:8px;">Recommended</span>
+              <h4>Click &amp; Collect (${money(PICKUP_FEE)})</h4>
+              <p>${escapeHtml(state.area.store)} · Ready ${escapeHtml(state.area.pickupDate)}.</p>
             </div>
-            <button type="button" class="btn btn-primary btn-block" id="btnRecUsePickup">Choose Click &amp; Collect (${money(PICKUP_FEE)})</button>
+            <button type="button" class="btn btn-primary btn-block" id="btnRecUsePickup">Choose Pickup (${money(PICKUP_FEE)})</button>
           </div>
           <div class="recovery-option-card">
             <div>
-              <span class="badge badge-neutral" style="margin-bottom:8px;">Unlock Home Delivery</span>
-              <h4>Add VATTENKAR Desk Organizer (+${money(ADDON_ORGANIZER.price)})</h4>
-              <p>Brings subtotal over ${money(DELIVERY_MIN)} so Home Delivery (${money(DELIVERY_FEE)}) unlocks while staying under ${money(state.filters.maxBudget)}.</p>
+              <span class="badge badge-neutral" style="margin-bottom:8px;">Unlock Delivery</span>
+              <h4>Add VATTENKAR Organizer (+${money(ADDON_ORGANIZER.price)})</h4>
+              <p>Meets ${money(DELIVERY_MIN)} minimum for Home Delivery (${money(DELIVERY_FEE)}).</p>
             </div>
-            <button type="button" class="btn btn-secondary btn-block" id="btnRecAddOrganizer">Add Organizer &amp; Unlock Delivery</button>
+            <button type="button" class="btn btn-secondary btn-block" id="btnRecAddOrganizer">Add &amp; Unlock Delivery</button>
           </div>
           <div class="recovery-option-card">
             <div>
-              <span class="badge badge-neutral" style="margin-bottom:8px;">Higher-Tier Lamp</span>
-              <h4>View Lamps Qualifying for Delivery</h4>
-              <p>Return to catalog (e.g., NYMÅNE at $49.99 qualifies directly for Home Delivery).</p>
+              <span class="badge badge-neutral" style="margin-bottom:8px;">Other Lamps</span>
+              <h4>Browse ${money(DELIVERY_MIN)}+ Lamps</h4>
+              <p>e.g., NYMÅNE ($49.99) qualifies directly.</p>
             </div>
             <button type="button" class="btn btn-secondary btn-block" id="btnRecBackCatalog">Return to Catalog</button>
           </div>
         </div>
       `;
     } else if (rec.kind === "invalid-zip") {
-      heading = `ZIP code "${rec.attemptedZip || "(blank)"}" could not be verified`;
-      diagnosis = `We could not match <strong>"${escapeHtml(rec.attemptedZip || "empty input")}"</strong> to a valid 5-digit US delivery area. Unlike an abrupt failure or silent reset, your previous valid location and bag remain untouched until you confirm a valid ZIP.`;
+      heading = `ZIP code "${rec.attemptedZip || "(blank)"}" not recognized`;
+      diagnosis = `Enter a valid 5-digit US ZIP below, or keep <strong>${escapeHtml(state.area.zip)} (${escapeHtml(state.area.store)})</strong>.`;
       optionsHtml = `
         <div class="card" style="margin-top:14px;background:var(--surface-muted);">
           <form id="recZipForm" novalidate>
-            <label class="field-label" for="recZipInput">Enter a valid 5-digit US ZIP code</label>
+            <label class="field-label" for="recZipInput">5-digit US ZIP code</label>
             <div class="zip-input-row" style="margin-top:6px;">
-              <input type="text" id="recZipInput" value="" placeholder="Try 85281, 85259, 90210, or 98101" inputmode="numeric" />
-              <button type="submit" class="btn btn-primary">Verify &amp; Return</button>
+              <input type="text" id="recZipInput" value="" placeholder="85281, 85259, 90210, or 98101" inputmode="numeric" />
+              <button type="submit" class="btn btn-primary">Verify ZIP</button>
             </div>
             <p class="field-error-msg hidden" id="recZipInlineErr" style="margin-top:8px;"></p>
           </form>
           <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;">
             <button type="button" class="btn btn-secondary" id="btnRecRestoreDefaultZip">
-              Keep Previous Valid ZIP (${escapeHtml(state.area.zip)} · ${escapeHtml(state.area.store)})
+              Keep ${escapeHtml(state.area.zip)} · ${escapeHtml(state.area.store)}
             </button>
           </div>
         </div>
@@ -1106,22 +1104,20 @@
           <div class="recovery-head">
             <div class="recovery-icon" aria-hidden="true">${isZip ? "!" : "⚠"}</div>
             <div>
-              <span class="eyebrow">State S3 · Guided Recovery (No Progress Lost)</span>
+              <span class="eyebrow">State S3 · Recovery</span>
               <h1 class="page-title" style="font-size:23px;">${escapeHtml(heading)}</h1>
-              <p style="margin:8px 0 0;color:var(--text-secondary);font-size:14.5px;">${diagnosis}</p>
+              <p style="margin:6px 0 0;color:var(--text-secondary);font-size:14.5px;">${diagnosis}</p>
             </div>
           </div>
 
           <div class="preserved-box">
-            <strong>What stayed safely preserved:</strong> ${escapeHtml(rec.preservedSummary)}
+            <strong>Saved:</strong> ${escapeHtml(rec.preservedSummary)}
           </div>
 
-          <h3 style="margin:0 0 6px;font-size:15.5px;">Choose how you want to recover</h3>
           ${optionsHtml}
 
-          <div style="margin-top:20px;padding-top:14px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
-            <button type="button" class="link-btn" id="btnRecCancelReturn">← Return to previous screen without changes</button>
-            <span style="font-size:12.5px;color:var(--text-muted);">Codex P10 &amp; P11: Data and orientation restored together</span>
+          <div style="margin-top:18px;padding-top:12px;border-top:1px solid var(--border);">
+            <button type="button" class="link-btn" id="btnRecCancelReturn">← Go back</button>
           </div>
         </div>
       </div>
@@ -1239,11 +1235,11 @@
     appMain.innerHTML = `
       <div class="page-head">
         <div>
-          <span class="eyebrow">Step 3 · Unobstructed Bag &amp; Budget Verification</span>
+          <span class="eyebrow">Step 3 · Shopping Bag</span>
           <h1 class="page-title">Shopping Bag (${cartItemCount()} item${cartItemCount() === 1 ? "" : "s"})</h1>
-          <p class="page-subtitle">All finishes, light bulbs, fulfillment fees, and estimated tax are visible upfront—zero hidden fees or overlapping sticky bars.</p>
+          <p class="page-subtitle">Review your items, fulfillment method, and full estimated total.</p>
         </div>
-        <button type="button" class="btn btn-secondary btn-sm" id="btnBagContinueShop">+ Add Another Item</button>
+        <button type="button" class="btn btn-secondary btn-sm" id="btnBagContinueShop">+ Add Item</button>
       </div>
 
       <div class="two-col-layout">
@@ -1252,28 +1248,25 @@
           <!-- Consistent Fulfillment Cards (No contradictory green dots!) -->
           <div class="card" style="margin-bottom:18px;">
             <div class="config-heading">
-              <span>How would you like to receive your order? (ZIP ${escapeHtml(state.area.zip)})</span>
+              <span>Fulfillment (ZIP ${escapeHtml(state.area.zip)})</span>
               <button type="button" class="link-btn" id="btnBagChangeZip">Update ZIP</button>
             </div>
             <div class="option-list">
               <button type="button" class="option-card ${totals.effectiveMode === "pickup" ? "selected" : ""}" id="btnBagPickup">
                 <span>
-                  <span class="option-title">Click &amp; Collect · ${escapeHtml(state.area.store)} <span class="badge badge-success" style="margin-left:6px;">Available</span></span>
-                  <span class="option-meta">Locked ready date: ${escapeHtml(state.area.pickupDate)} (${escapeHtml(state.area.pickupWindow)})</span>
+                  <span class="option-title">Click &amp; Collect · ${escapeHtml(state.area.store)}</span>
+                  <span class="option-meta">Ready ${escapeHtml(state.area.pickupDate)} (${escapeHtml(state.area.pickupWindow)})</span>
                 </span>
                 <span class="option-price">${money(PICKUP_FEE)}</span>
               </button>
 
               <button type="button" class="option-card ${totals.effectiveMode === "delivery" ? "selected" : ""} ${!totals.deliveryUnlocked ? "oos" : ""}" id="btnBagDelivery">
                 <span>
-                  <span class="option-title">Home Delivery to ${escapeHtml(state.area.zip)}
-                    ${totals.deliveryUnlocked
-                      ? `<span class="badge badge-success" style="margin-left:6px;">Unlocked</span>`
-                      : `<span class="badge badge-warn" style="margin-left:6px;">Needs ${money(totals.remainingForDelivery)} more</span>`}
-                  </span>
+                  <span class="option-title">Home Delivery to ${escapeHtml(state.area.zip)}</span>
+                  ${!totals.deliveryUnlocked ? `<span class="option-tag-row"><span class="badge badge-warn">Needs ${money(totals.remainingForDelivery)} more</span></span>` : ""}
                   <span class="option-meta">${totals.deliveryUnlocked
                     ? `Estimated arrival: ${escapeHtml(state.area.deliveryDate)}`
-                    : `Minimum ${money(DELIVERY_MIN)} item subtotal required — click to view recovery options`}</span>
+                    : `Requires ${money(DELIVERY_MIN)} subtotal`}</span>
                 </span>
                 <span class="option-price">${totals.deliveryUnlocked ? money(DELIVERY_FEE) : "Locked"}</span>
               </button>
@@ -1281,8 +1274,8 @@
 
             <div class="threshold-meter ${totals.deliveryUnlocked ? "met" : ""}">
               ${totals.deliveryUnlocked
-                ? `<strong>${money(DELIVERY_MIN)} delivery minimum met.</strong> Choose either Click &amp; Collect or Home Delivery above.`
-                : `Subtotal is ${money(totals.subtotal)} of ${money(DELIVERY_MIN)} needed for Home Delivery (${money(totals.remainingForDelivery)} remaining). Click &amp; Collect is ready now.`}
+                ? `<strong>${money(DELIVERY_MIN)} delivery minimum met.</strong>`
+                : `Add <strong>${money(totals.remainingForDelivery)}</strong> more for Home Delivery (${money(DELIVERY_MIN)} min). Pickup is ready now.`}
               <div class="meter-track"><div class="meter-fill" style="width:${pct}%"></div></div>
             </div>
           </div>
@@ -1368,9 +1361,9 @@
           </div>
 
           <button type="button" class="btn btn-primary btn-block" id="btnProceedCheckout">
-            Continue to Guest Checkout →
+            Continue to Checkout →
           </button>
-          <p class="field-hint" style="text-align:center;margin-top:8px;">No account required. Your selected store (${escapeHtml(state.area.store)}) stays locked into checkout.</p>
+          <p class="field-hint" style="text-align:center;margin-top:8px;">Guest checkout · Store stays locked.</p>
         </aside>
       </div>
     `;
@@ -1499,8 +1492,8 @@
 
     const errSummaryHtml = isErrorState && errKeys.length > 0 ? `
       <div class="error-summary-box" id="checkoutErrorSummary" role="alert" tabindex="-1">
-        <h3>State S6 · ${errKeys.length} detail${errKeys.length === 1 ? "" : "s"} need attention before reviewing your order</h3>
-        <p style="margin:0;font-size:13.5px;">All valid entries, your bag items, and your locked fulfillment store (<strong>${escapeHtml(state.area.store)}</strong>) are safely preserved. Select any item below to jump directly to the field:</p>
+        <h3>${errKeys.length} field${errKeys.length === 1 ? "" : "s"} need attention</h3>
+        <p style="margin:0;font-size:13.5px;">Your bag and locked store (<strong>${escapeHtml(state.area.store)}</strong>) are saved. Select an item to jump to it:</p>
         <ul class="error-summary-list">
           ${errKeys.map((k) => `<li><a href="#field-${k}" data-jump-field="${k}">${escapeHtml(errs[k])}</a></li>`).join("")}
         </ul>
@@ -1509,31 +1502,30 @@
 
     const pendingSwapHtml = c.pendingAreaSwap ? `
       <div class="store-diff-alert" role="region" aria-label="Confirm fulfillment store change">
-        <strong>Explicit Store &amp; Date Change Check (No Silent Substitutions):</strong>
+        <strong>Confirm store change:</strong>
         <p style="margin:6px 0 10px;">
-          Changing ZIP to <strong>${escapeHtml(c.pendingAreaSwap.zip)}</strong> would update your pickup store from
+          ZIP <strong>${escapeHtml(c.pendingAreaSwap.zip)}</strong> switches pickup from
           <strong>${escapeHtml(state.area.store)} (${escapeHtml(state.area.pickupDate)})</strong> to
-          <strong>${escapeHtml(c.pendingAreaSwap.store)} (${escapeHtml(c.pendingAreaSwap.pickupDate)})</strong>
-          and tax rate to <strong>${(c.pendingAreaSwap.taxRate * 100).toFixed(1)}%</strong>.
+          <strong>${escapeHtml(c.pendingAreaSwap.store)} (${escapeHtml(c.pendingAreaSwap.pickupDate)})</strong>.
         </p>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <button type="button" class="btn btn-primary btn-sm" id="btnApproveSwap">Confirm Change to ${escapeHtml(c.pendingAreaSwap.store)}</button>
-          <button type="button" class="btn btn-secondary btn-sm" id="btnKeepOriginalStore">Keep ${escapeHtml(state.area.store)} (${escapeHtml(state.area.pickupDate)})</button>
+          <button type="button" class="btn btn-primary btn-sm" id="btnApproveSwap">Switch to ${escapeHtml(c.pendingAreaSwap.store)}</button>
+          <button type="button" class="btn btn-secondary btn-sm" id="btnKeepOriginalStore">Keep ${escapeHtml(state.area.store)}</button>
         </div>
       </div>
     ` : "";
 
     appMain.innerHTML = `
       <div class="back-row" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
-        <button type="button" class="link-btn" id="btnCheckoutBackBag">← Edit Shopping Bag (your entered details stay saved)</button>
-        <button type="button" class="link-btn" id="btnFillSampleFictional">Fill sample fictional details</button>
+        <button type="button" class="link-btn" id="btnCheckoutBackBag">← Edit Bag</button>
+        <button type="button" class="link-btn" id="btnFillSampleFictional">Fill sample details</button>
       </div>
 
       <div class="page-head">
         <div>
-          <span class="eyebrow">Step 4 · Guest Checkout · Fictional Information Only</span>
-          <h1 class="page-title">${isErrorState ? "Fix Highlighted Details to Continue" : "Fulfillment &amp; Contact Details"}</h1>
-          <p class="page-subtitle">Checking out as a guest (no login wall). Your fulfillment store and date stay locked unless you explicitly approve a change.</p>
+          <span class="eyebrow">Step 4 · Guest Checkout</span>
+          <h1 class="page-title">${isErrorState ? "Fix Highlighted Fields" : "Fulfillment &amp; Contact Details"}</h1>
+          <p class="page-subtitle">No account required. Use fictional information only.</p>
         </div>
       </div>
 
@@ -1545,7 +1537,7 @@
           <div class="locked-fulfillment-card">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
               <div>
-                <span class="badge badge-success" style="margin-bottom:6px;">Locked from Bag · No Silent Store Changes</span>
+                <span class="badge badge-success" style="margin-bottom:6px;">Locked from Bag</span>
                 <h3 style="margin:0;font-size:16.5px;">
                   ${isDelivery ? `Home Delivery to ZIP ${escapeHtml(state.area.zip)}` : `Click &amp; Collect · ${escapeHtml(state.area.store)}`}
                 </h3>
@@ -1597,7 +1589,7 @@
                 <div class="form-field ${errs.zip ? "has-error" : ""}">
                   <label class="field-label" for="field-zip">ZIP code <span class="req-star">*</span></label>
                   <input type="text" class="text-input" id="field-zip" value="${escapeHtml(c.zip)}" placeholder="e.g., 85281" inputmode="numeric" aria-invalid="${Boolean(errs.zip)}" />
-                  ${errs.zip ? `<span class="field-error-msg">⚠ ${escapeHtml(errs.zip)}</span>` : `<span class="field-hint">Valid demo ZIPs: 85281, 85259, 90210, 98101 (try 00000 to test error recovery)</span>`}
+                  ${errs.zip ? `<span class="field-error-msg">⚠ ${escapeHtml(errs.zip)}</span>` : `<span class="field-hint">Demo ZIPs: 85281, 85259, 90210, 98101</span>`}
                 </div>
 
                 <div class="form-field">
@@ -1644,7 +1636,7 @@
             <div class="cost-row"><span>Estimated Tax (${(state.area.taxRate * 100).toFixed(1)}%)</span><span>${money(totals.tax)}</span></div>
             <div class="cost-row total"><span>Estimated Total</span><span>${money(totals.total)}</span></div>
           </div>
-          <p class="field-hint" style="margin-top:10px;">Next step lets you review every selection before placing your simulated order.</p>
+          <p class="field-hint" style="margin-top:10px;">You can review everything on the next step before placing.</p>
         </aside>
       </div>
     `;
@@ -1847,7 +1839,7 @@
           <button type="button" class="btn btn-success btn-block" id="btnPlaceSimulatedOrder">
             Place Simulated Order (${money(totals.total)})
           </button>
-          <p class="field-hint" style="text-align:center;margin-top:8px;">Clicking above processes a simulated order and displays an authoritative confirmation receipt.</p>
+          <p class="field-hint" style="text-align:center;margin-top:8px;">Simulated order — no real charge.</p>
         </aside>
       </div>
     `;
@@ -1896,10 +1888,10 @@
           <div class="confirmed-top">
             <div class="check-circle" aria-hidden="true">✓</div>
             <div>
-              <span class="badge badge-success" style="margin-bottom:5px;">State S8 · Order Complete — No Further Action Needed</span>
-              <h1 class="page-title" style="color:#0b4f2d;">Simulated Order Confirmed!</h1>
+              <span class="badge badge-success" style="margin-bottom:5px;">Order Complete</span>
+              <h1 class="page-title" style="color:#0b4f2d;">Simulated Order Confirmed</h1>
               <p style="margin:4px 0 0;color:#145333;font-size:14.5px;">
-                A copy of this simulated receipt was prepared for <strong>${escapeHtml(ord.customer.email)}</strong>. Your purchase workflow is complete.
+                Simulated receipt prepared for <strong>${escapeHtml(ord.customer.email)}</strong>.
               </p>
             </div>
           </div>
@@ -2038,32 +2030,28 @@
   // OUT-OF-STOCK FINISH RECOVERY POP-UP MODAL (S3 Overlay on S2)
   // =========================================================================
   function openOosModal(prod, chosen, alt) {
-    const bulbLabel = prod.bulbIncluded ? "Built-in Warm 2700K LED" : getBulb(state.selectedBulbId).shortName;
     protoStateBadge.textContent = "State S3: Option / Fulfillment Recovery (Pop-up)";
     oosModalContent.innerHTML = `
       <div class="modal-head">
         <div>
-          <span class="eyebrow" style="color:var(--warn);">State S3 · Out-of-Stock Recovery</span>
-          <h2 id="oosModalTitle">${escapeHtml(prod.name)} in "${escapeHtml(chosen.label)}" is out of stock</h2>
+          <span class="eyebrow" style="color:var(--warn);">Out of Stock</span>
+          <h2 id="oosModalTitle">${escapeHtml(prod.name)} — ${escapeHtml(chosen.label)} is unavailable</h2>
         </div>
-        <button type="button" class="icon-close-btn" id="btnCloseOosModal" aria-label="Close out-of-stock warning">&times;</button>
+        <button type="button" class="icon-close-btn" id="btnCloseOosModal" aria-label="Close out-of-stock notice">&times;</button>
       </div>
       <p class="modal-desc">
-        <strong>${escapeHtml(chosen.label)}</strong> is currently unavailable at <strong>${escapeHtml(state.area.store)}</strong> (ZIP ${escapeHtml(state.area.zip)}). You can stay on this page to preview the finish (<em>Add to Bag</em> stays disabled), or switch to an in-stock finish in one click.
+        Currently out of stock at <strong>${escapeHtml(state.area.store)}</strong>. Your bulb and budget choices are saved.
       </p>
-      <div class="preserved-box" style="margin:12px 0 16px;">
-        <strong>What stayed safely preserved:</strong> ${escapeHtml(prod.name)} (${money(prod.price)}), bulb choice (${escapeHtml(bulbLabel)}), budget limit (${money(state.filters.maxBudget)}), and store (${escapeHtml(state.area.store)}).
-      </div>
       <div style="display:flex;flex-direction:column;gap:10px;">
         <button type="button" class="btn btn-primary btn-block" id="btnModalSwitchInStock">
-          Switch to ${escapeHtml(alt.label)} (${escapeHtml(alt.stockText)})
+          Switch to ${escapeHtml(alt.label)} (In Stock)
         </button>
         <div style="display:flex;gap:10px;flex-wrap:wrap;">
           <button type="button" class="btn btn-secondary" style="flex:1;" id="btnModalKeepPreview">
-            Keep Previewing ${escapeHtml(chosen.label)}
+            Keep Previewing
           </button>
           <button type="button" class="btn btn-secondary" style="flex:1;" id="btnModalBrowseOthers">
-            Browse Other Lamps
+            Other Lamps
           </button>
         </div>
       </div>

@@ -106,24 +106,22 @@
       <div class="modal-head">
         <div>
           <span class="eyebrow">Store &amp; Delivery Area</span>
-          <h2 id="locModalTitle">Update your ZIP code</h2>
+          <h2 id="locModalTitle">Update ZIP code</h2>
         </div>
         <button type="button" class="icon-close-btn" id="btnCloseLocModal" aria-label="Close location dialog">&times;</button>
       </div>
-      <p class="modal-desc">
-        Your ZIP determines delivery availability and your locked local IKEA pickup store. Changing ZIP will always show store/date changes before updating your order.
-      </p>
+      <p class="modal-desc">Enter your 5-digit ZIP to check local pickup and delivery.</p>
       <form id="locationForm" novalidate>
         <label class="field-label" for="modalZipInput">5-digit US ZIP code</label>
         <div class="zip-input-row">
           <input type="text" id="modalZipInput" inputmode="numeric" maxlength="10" placeholder="e.g., 85281" autocomplete="postal-code" />
           <button type="submit" class="btn btn-primary">Check ZIP</button>
         </div>
-        <p class="field-hint">Supported demo areas: <code>85281</code> / <code>85259</code> (Phoenix/Tempe, AZ), <code>90210</code> (Burbank, CA), <code>98101</code> (Renton, WA). Try <code>00000</code> to test recovery.</p>
+        <p class="field-hint">Demo ZIPs: <code>85281</code>, <code>85259</code>, <code>90210</code>, <code>98101</code> (try <code>00000</code> for recovery).</p>
       </form>
       <div class="modal-footer-links">
-        <button type="button" class="link-btn" id="btnQuickZipPhoenix">Use 85281 (Tempe / IKEA Phoenix, AZ)</button>
-        <button type="button" class="link-btn" id="btnQuickZipInvalid">Simulate invalid ZIP (00000)</button>
+        <button type="button" class="link-btn" id="btnQuickZipPhoenix">Use 85281 (Phoenix, AZ)</button>
+        <button type="button" class="link-btn" id="btnQuickZipInvalid">Test invalid ZIP (00000)</button>
       </div>
     </div>
   </div>
@@ -138,7 +136,7 @@
     <div class="processing-card">
       <div class="spinner" aria-hidden="true"></div>
       <h2>Processing simulated order…</h2>
-      <p>Verifying stock at <strong id="procStoreName">IKEA Phoenix, AZ</strong> and generating your receipt. Please do not click back or resubmit.</p>
+      <p>Confirming slot at <strong id="procStoreName">IKEA Phoenix, AZ</strong>…</p>
       <div class="proc-steps">
         <span class="proc-step done">1. Selections verified</span>
         <span class="proc-step active">2. Confirming fulfillment slot…</span>
