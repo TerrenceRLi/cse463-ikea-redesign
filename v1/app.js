@@ -236,6 +236,7 @@
       activeProductId: "tertial",
       selectedFinishId: "dark-gray",
       selectedBulbId: "solhetta-450",
+      bagReturnScreen: "S1",
       // S3 recovery payload
       recovery: null,
       // S4 Shopping Bag
@@ -420,6 +421,9 @@
 
   // Navigation & Header/Scaffold Sync
   function goTo(screen, options = {}) {
+    if (screen === "S4" && (state.screen === "S2" || state.screen === "S1")) {
+      state.bagReturnScreen = state.screen;
+    }
     if (!options.keepPrev) {
       state.prevScreen = state.screen;
     }
@@ -1205,18 +1209,29 @@
   function renderS4() {
     const totals = computeCartTotals();
 
+    const returnProd = state.bagReturnScreen === "S2" ? getProduct(state.activeProductId) : null;
+
     if (state.cart.length === 0) {
       appMain.innerHTML = `
+        <div class="back-row">
+          ${returnProd
+            ? `<button type="button" class="link-btn" id="btnEmptyBagBackProduct">← Back to ${escapeHtml(returnProd.name)}</button>`
+            : `<button type="button" class="link-btn" id="btnEmptyBagBackCatalog">← Back to Catalog</button>`}
+        </div>
         <div class="card" style="max-width:640px;margin:20px auto;text-align:center;padding:40px;">
-          <span class="eyebrow">State S4 · Shopping Bag</span>
+          <span class="eyebrow">Shopping Bag</span>
           <h1 class="page-title" style="margin-bottom:8px;">Your shopping bag is empty</h1>
-          <p class="page-subtitle" style="margin-bottom:20px;">Browse compact study desk lamps with upfront bulb pairing and transparent cost estimates.</p>
+          <p class="page-subtitle" style="margin-bottom:20px;">Select a compact study desk lamp to begin.</p>
           <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;">
             <button type="button" class="btn btn-primary" id="btnEmptyBagShop">Browse Desk Lamps</button>
             ${state.lastRemovedItem ? `<button type="button" class="btn btn-secondary" id="btnUndoLastRemove">Undo Remove (${escapeHtml(state.lastRemovedItem.name)})</button>` : ""}
           </div>
         </div>
       `;
+      const emptyBackProd = document.getElementById("btnEmptyBagBackProduct");
+      if (emptyBackProd) emptyBackProd.addEventListener("click", () => goTo("S2"));
+      const emptyBackCat = document.getElementById("btnEmptyBagBackCatalog");
+      if (emptyBackCat) emptyBackCat.addEventListener("click", () => goTo("S1"));
       document.getElementById("btnEmptyBagShop").addEventListener("click", () => goTo("S1"));
       const undoBtn = document.getElementById("btnUndoLastRemove");
       if (undoBtn) {
@@ -1233,6 +1248,13 @@
     const pct = Math.min(100, Math.round((totals.subtotal / DELIVERY_MIN) * 100));
 
     appMain.innerHTML = `
+      <div class="back-row" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+        ${returnProd
+          ? `<button type="button" class="link-btn" id="btnBagBackProduct">← Back to ${escapeHtml(returnProd.name)}</button>
+             <button type="button" class="link-btn" id="btnBagBackCatalog" style="color:var(--text-secondary);">Browse All Lamps</button>`
+          : `<button type="button" class="link-btn" id="btnBagBackCatalog">← Back to Catalog</button>`}
+      </div>
+
       <div class="page-head">
         <div>
           <span class="eyebrow">Step 3 · Shopping Bag</span>
@@ -1369,6 +1391,10 @@
     `;
 
     // Bind S4 Events
+    const bagBackProd = document.getElementById("btnBagBackProduct");
+    if (bagBackProd) bagBackProd.addEventListener("click", () => goTo("S2"));
+    const bagBackCat = document.getElementById("btnBagBackCatalog");
+    if (bagBackCat) bagBackCat.addEventListener("click", () => goTo("S1"));
     document.getElementById("btnBagContinueShop").addEventListener("click", () => goTo("S1"));
     document.getElementById("btnBagChangeZip").addEventListener("click", openLocationModal);
 
